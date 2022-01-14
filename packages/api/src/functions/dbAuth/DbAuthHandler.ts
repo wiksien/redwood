@@ -4,6 +4,9 @@ import CryptoJS from 'crypto-js'
 import md5 from 'md5'
 import { v4 as uuidv4 } from 'uuid'
 
+import { CorsConfig, CorsContext, createCorsContext } from '../../cors'
+import { normalizeRequest } from '../../transforms'
+
 import * as DbAuthError from './errors'
 import { decryptSession, getSession } from './shared'
 
@@ -100,6 +103,11 @@ interface DbAuthHandlerOptions {
       usernameTaken?: string
     }
   }
+
+  /**
+   * CORS settings, same as in createGraphqlHandler
+   */
+  cors?: CorsConfig
 }
 
 interface SignupHandlerOptions {
@@ -140,6 +148,7 @@ export class DbAuthHandler {
   hasInvalidSession: boolean
   session: SessionRecord | undefined
   sessionCsrfToken: string | undefined
+  corsContext: CorsContext | undefined
 
   // class constant: list of auth methods that are supported
   static get METHODS(): AuthMethodNames[] {
@@ -223,6 +232,10 @@ export class DbAuthHandler {
     this.headerCsrfToken = this.event.headers['csrf-token']
     this.hasInvalidSession = false
 
+    if (options.cors) {
+      this.corsContext = createCorsContext(options.cors)
+    }
+
     try {
       const [session, csrfToken] = decryptSession(
         getSession(this.event.headers['cookie'])
@@ -243,10 +256,29 @@ export class DbAuthHandler {
   // Actual function that triggers everything else to happen: `login`, `signup`,
   // etc. is called from here, after some checks to make sure the request is good
   async invoke() {
+    const request = normalizeRequest(this.event)
+    let corsHeaders = {}
+    if (this.corsContext) {
+      corsHeaders = this.corsContext.getRequestHeaders(request)
+      // Return CORS headers for OPTIONS requests
+      if (this.corsContext.shouldHandleCors(request)) {
+        return {
+          body: '',
+          statusCode: 200,
+          headers: corsHeaders,
+        }
+      }
+    }
+
     // if there was a problem decryption the session, just return the logout
     // response immediately
     if (this.hasInvalidSession) {
       return this._ok(...this._logoutResponse())
+    }
+
+    let response: {
+      statusCode: number
+      headers?: Record<string, string>
     }
 
     try {
@@ -254,12 +286,12 @@ export class DbAuthHandler {
 
       // get the auth method the incoming request is trying to call
       if (!DbAuthHandler.METHODS.includes(method)) {
-        return this._notFound()
+        response = this._notFound()
       }
 
       // make sure it's using the correct verb, GET vs POST
       if (this.event.httpMethod !== DbAuthHandler.VERBS[method]) {
-        return this._notFound()
+        response = this._notFound()
       }
 
       // call whatever auth method was requested and return the body and headers
@@ -267,13 +299,21 @@ export class DbAuthHandler {
         method
       ]()
 
-      return this._ok(body, headers, options)
+      response = this._ok(body, headers, options)
     } catch (e: any) {
       if (e instanceof DbAuthError.WrongVerbError) {
-        return this._notFound()
+        response = this._notFound()
       } else {
-        return this._badRequest(e.message || e)
+        response = this._badRequest(e.message || e)
       }
+    }
+
+    return {
+      ...response,
+      headers: {
+        ...(response.headers || {}),
+        ...corsHeaders,
+      },
     }
   }
 
