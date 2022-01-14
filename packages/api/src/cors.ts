@@ -1,4 +1,4 @@
-import { Request } from 'graphql-helix'
+import type { Request } from 'graphql-helix'
 import { Headers } from 'node-fetch'
 
 export type CorsConfig = {
