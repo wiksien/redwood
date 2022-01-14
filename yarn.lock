@@ -5367,6 +5367,7 @@ __metadata:
     jsonwebtoken: 8.5.1
     jwks-rsa: 2.0.5
     md5: 2.3.0
+    node-fetch: 2.6.6
     pascalcase: 1.0.0
     pino: 7.6.3
     supertokens-node: 8.4.0
@@ -5613,7 +5614,6 @@ __metadata:
     jest: 27.4.7
     lodash.merge: 4.6.2
     lodash.omitby: 4.6.0
-    node-fetch: 2.6.6
     typescript: 4.5.4
     uuid: 8.3.2
   languageName: unknown
