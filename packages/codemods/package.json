@@ -28,6 +28,7 @@
     "@vscode/ripgrep": "1.14.2",
     "core-js": "3.21.0",
     "deepmerge": "4.2.2",
+    "execa": "5.1.1",
     "fast-glob": "3.2.11",
     "findup-sync": "5.0.0",
     "jest": "27.5.0",
@@ -36,7 +37,8 @@
     "prettier": "2.5.1",
     "tasuku": "1.0.2",
     "toml": "3.0.0",
-    "yargs": "16.2.0"
+    "yargs": "16.2.0",
+    "yargs-parser": "21.0.0"
   },
   "devDependencies": {
     "@types/babel__core": "7.1.18",
@@ -44,6 +46,7 @@
     "@types/jscodeshift": "0.11.3",
     "@types/prettier": "2.4.3",
     "fs-extra": "10.0.0",
+    "nodemon": "2.0.15",
     "tempy": "1.0.1"
   }
 }
